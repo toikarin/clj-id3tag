@@ -1,11 +1,12 @@
-(ns funkfest.tags)
-
+(ns funkfest.tags
+  (:use [funkfest.utils :as utils]
+        [clojure.contrib.seq-utils :only (flatten)]))
 ;;
 ;; Types
 ;;
 
 (defstruct id3v2-tag :header :extended-header :frames :footer :total-length)
-(defstruct id3v2-header :major-version :minor-version :unsynch :extended :experimental :footer :tag-length)
+(defstruct id3v2-header :major-version :minor-version :flags :tag-length)
 (defstruct id3v2-extended-header :length :flags)
 (defstruct id3v2-frame-header :id :frame-length :tag-alter-preservation :file-alter-preservation :read-only
            :grouping-identity :compression :encryption :unsynchronisation :data-length-indicator)
@@ -143,11 +144,12 @@
   "Checks if the given data starts with a ID3v2 header."
   [data]
   {:pre [(>= (count data) HEADER_LENGTH)]}
-  (and
-    (= (seq (. "ID3" getBytes)) (take 3 data))
-    (every? #(< % 255) (take 2 (drop 3 data)))
-    ; XXX: strict check for flags?
-    (every? #(< % 128) (take 4 (drop 6 data)))))
+  (let [[id versions flags length] (utils/split-at-pos [3 2 1 4] data)]
+    (and
+      (= (seq (. "ID3" getBytes)) id)
+      (every? #(< % 255) versions)
+      ; XXX: strict check for flags?
+      (every? #(< % 128) length))))
 
 (defn is-user-defined-text-frame?
   "Checks if the given id is a user defined text frame id"
@@ -180,15 +182,24 @@
   ([data file-enc]
     (String. (byte-array data) (get-encoding file-enc))))
 
+(defn length-to-bytes
+  [len]
+  [(bit-and 127 (bit-shift-right len 21))
+   (bit-and 127 (bit-shift-right len 14))
+   (bit-and 127 (bit-shift-right len 7))
+   (bit-and 127 len)])
+
 (defn calculate-length
+  "Calculates header length from given data."
   [len-data]
   {:pre [(>= (count len-data) HEADER_SIZE_LENGTH)
-         (every? #(< % 128) (take HEADER_SIZE_LENGTH len-data))]}
-  (let [byte-values [(nth len-data 3)
-                     (bit-shift-left (nth len-data 2) 7)
-                     (bit-shift-left (nth len-data 1) 14)
-                     (bit-shift-left (first len-data) 21)]]
-    (reduce bit-or (map #(bit-and (short 255) %) byte-values))))
+         (not-any? neg? (take HEADER_SIZE_LENGTH len-data))]}
+  (let [raw-bytes (map #(bit-and (short 255) %) (take 4 len-data))
+        byte-values [(nth raw-bytes 3)
+                     (bit-shift-left (nth raw-bytes 2) 7)
+                     (bit-shift-left (nth raw-bytes 1) 14)
+                     (bit-shift-left (first raw-bytes) 21)]]
+    (reduce bit-or byte-values)))
 
 (defn get-frames-by-id
   [id3v2-tag id]
@@ -402,10 +413,40 @@
 ;; | Footer (10 bytes, identical to header except the 3 first bytes equal to 3DI) |
 ;; +-----------------------------------------------------------------------------=+
 ;;
+;;
+(defn bit-set-to [x n pred]
+  (if pred
+    (bit-set x n)
+    (bit-clear x n)))
+
+(defn id3v2-header-to-bytes
+  [id3v2-header]
+  (flatten
+    (seq (. "ID3" getBytes))
+    (:major-version id3v2-header)
+    (:minor-version id3v2-header)
+    (:flags id3v2-header)
+    (:tag-length id3v2-header)))
 
 ;;
 ;; Functions
 ;;
+
+(defn header-has-footer?
+  [id3v2-header]
+  (bit-test (:flags id3v2-header) 4))
+
+(defn header-is-experimental-tag?
+  [id3v2-header]
+  (bit-test (:flags id3v2-header) 5))
+
+(defn header-contains-extended-header?
+  [id3v2-header]
+  (bit-test (:flags id3v2-header) 6))
+
+(defn header-is-unsynchronized?
+  [id3v2-header]
+  (bit-test (:flags id3v2-header) 7))
 
 (defn parse-id3v2-header
   "
@@ -414,41 +455,32 @@
   [data]
   {:pre [(>= (count data) HEADER_LENGTH)
          (starts-with-header? data)]}
-  (let
-    [major-version (nth data 3)
-     minor-version (nth data 4)
-     flags (nth data 5)]
-
+  (let [[_ major-version minor-version flags raw-len] (utils/split-at-pos [3 1 1 1 4] data)]
     (struct-map id3v2-header
                 :major-version major-version
                 :minor-version minor-version
-                :footer (bit-test flags 4)
-                :experimental (bit-test flags 5)
-                :extended (bit-test flags 6)
-                :unsynch (bit-test flags 7)
-                :tag-length (calculate-length (take 4 (drop 6 data))))))
+                :flags flags
+;                :footer (bit-test flags 4)
+;                :experimental (bit-test flags 5)
+;                :extended (bit-test flags 6)
+;                :unsynch (bit-test flags 7)
+                :tag-length (calculate-length raw-len))))
 
 (defn parse-extended-id3v2-header
   [data]
   {:pre [(>= (count data) HEADER_LENGTH)]}
-  (let
-    [length (calculate-length (take 4 data))
-     flags (nth data 6)]
-
-    (struct-map id3v2-extended-header :length length :flags flags)))
+  (let [[raw-len flag-byte-count flags] (utils/split-at-pos [4 1 1] data)]
+    (struct-map id3v2-extended-header :length (calculate-length raw-len) :flags flags)))
 
 (defn parse-frame-header
   [data]
   {:pre [(>= (count data) FRAME_HEADER_LENGTH)]}
   (let
-    [id (String. (byte-array (take 4 data)))
-     length (calculate-length (drop 4 (take 8 data)))
-     flags-1 (nth data 8)
-     flags-2 (nth data 9)]
+    [[raw-id raw-length flags-1 flags-2] (utils/split-at-pos [4 4 1 1] data)]
 
     (struct-map id3v2-frame-header
-                :id id
-                :frame-length length
+                :id (String. (byte-array raw-id))
+                :frame-length (calculate-length raw-length)
                 :tag-alter-preservation (bit-test flags-1 6)
                 :file-alter-preservation (bit-test flags-1 5)
                 :read-only (bit-test flags-1 4)
@@ -487,19 +519,19 @@
 ; <Two nil bytes>
 ; <Text information> (text data according the encoding)
 (defmethod parse-frame-mm :comments-frame [frame-type header frame-data]
-  (let [frame-encoding (first frame-data)
-        language (to-text-info (take 3 (drop 1 frame-data)))
-        splitted-data (split-by-nil (drop 4 frame-data))]
-    (struct-map id3v2-frame
-            :type frame-type
-            :header header
-            :data {:encoding frame-encoding :language language 
-             :description (first splitted-data)
-             :text (rest splitted-data)})))
+  (let
+    [[frame-encoding raw-lang raw-data] (utils/split-at-pos [1 3 :rest])]
+    (let [splitted-data (split-by-nil raw-data)]
+      (struct-map id3v2-frame
+                  :type frame-type
+                  :header header
+                  :data {:encoding frame-encoding
+                         :language (to-text-info raw-lang)
+                         :description (first splitted-data)
+                         :text (rest splitted-data)}))))
 
 ;
 ; URL link frame
-;
 ; <Header, ID: W[A-Z]{3}, excluding WXXX>
 ; <URL> (text data)
 (defmethod parse-frame-mm :url-frame [frame-type header frame-data]
@@ -517,7 +549,7 @@
 ; <URL>              (text data)
 (defmethod parse-frame-mm :user-url-frame [frame-type header frame-data]
   (let [frame-encoding (first frame-data)
-        splitted-data (split-by-two-nils frame-data)]
+        splitted-data (split-by-two-nils (rest frame-data))]
     (struct-map id3v2-frame
             :type frame-type
             :header header
@@ -610,7 +642,7 @@
           data-left-without-headers (-
                                       (:tag-length header)
                                       headers-length
-                                      (if (:footer header) (HEADER_LENGTH) 0))]
+                                      (if (header-has-footer? header) (HEADER_LENGTH) 0))]
       ; Parse frames
       (loop [data-left data-left-without-headers
              cur-data (drop headers-length data)
