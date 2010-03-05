@@ -188,14 +188,6 @@
                      (bit-shift-left (first raw-bytes) 21)]]
     (reduce bit-or byte-values)))
 
-(defn get-frames-by-id
-  [id3v2-tag id]
-  (filter #(= (id frame-ids) (:id (:header %))) (seq (:frames id3v2-tag))))
-
-(defn get-frame-data-by-id
-  [id3v2-tag id]
-  (map #(:data %) (get-frames-by-id id3v2-tag id)))
-
 (defn find-two-nil-bytes
   [data]
   (loop [cur-data data index 0]
@@ -218,13 +210,11 @@
 ;    (if (>= split-pos 0)
 ;      [(take split-pos data) (drop (+ 2 split-pos) data)]
 ;      [data nil])))
+;
 
 (defn split-by-nil
   [data]
-  (let [split-pos (find-nil-byte data)]
-    (if (>= split-pos 0)
-      [(take split-pos data) (drop (inc split-pos) data)]
-      [data nil])))
+  (split-drop-separator #(not= 0 %) data))
 
 (defn frame-id-to-type
   [id]
@@ -251,32 +241,6 @@
     ;(= "RVRB" id) :reverb-frame
     ;(= "APIC" id) :general-encapsulated-object-frame
     :else nil))
-
-;;
-;; User-friendly functions
-;;
-
-(defn get-album
-  [id3v2-tag]
-  (get-frame-data-by-id id3v2-tag :album))
-
-(defn get-lead-performer
-  [id3v2-tag]
-  (get-frame-data-by-id id3v2-tag :lead-performer))
-
-(defn get-title
-  [id3v2-tag]
-  (get-frame-data-by-id id3v2-tag :title))
-
-(defn get-year
-  [id3v2-tag]
-  (get-frame-data-by-id id3v2-tag :year))
-
-(defn get-tag-version
-  [id3v2-tag]
-  (let [hdr (:header id3v2-tag)]
-    (apply str (interpose "." [2 (:major-version hdr) (:minor-version hdr)]))))
-
 
 ;;
 ;; Info about the ID3v2 tags...

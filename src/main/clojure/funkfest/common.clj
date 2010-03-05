@@ -29,7 +29,7 @@
   [method-name method-key flag-key bit-op bit]
   `(defmethod ~method-name ~method-key
      [_# m#]
-     (assoc m# ~flag-key (~bit-op (~flag-key m#) ~bit))))
+     (update-in m# [~flag-key] (fn [flag#] (~bit-op flag# ~bit)))))
 
 (defmacro
   #^{:private true}
@@ -83,14 +83,6 @@
 :data-length-indicator   :flags-2 0)
 
 
-;
-;
-;
-
-(defn massoc
-  [m k f]
-  (assoc m k (f (k m))))
-
 ;(defn add-frame
 ;  [tag frame]
 ;  (let [cur-frames (:frames tag)
@@ -104,6 +96,23 @@
 ;    )))
     ;(assoc tag :
     ;       (conj (:
+
+
+(defn get-frames-by-id
+  "Return only those frames whose id match to wanted id."
+  [tag id]
+  (filter
+    #(= id (:id (:header %)))
+    (:frames tag)))
+
+(defn get-frame-data-by-id
+  "Return only those frames' data whose id match to wanted id."
+  [tag wanted-id]
+  (map #(:data %) (get-frames-by-id tag wanted-id)))
+
+;;
+;; Create
+;;
 
 (defn create-header
   []

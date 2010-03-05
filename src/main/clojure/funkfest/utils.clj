@@ -16,6 +16,12 @@
   [& args]
   (byte-array (flatten (map convert-to-byte args))))
 
+(defmacro split-drop-separator
+  "Equal to split-with but drops the separator from the second element."
+  [pred coll]
+  `(let [splitted# (split-with ~pred ~coll)]
+    [(first splitted#) (rest (second splitted#))]))
+
 (defn take-min
   [n coll]
   (let [coll-count (count coll)]
