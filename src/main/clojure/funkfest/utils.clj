@@ -1,4 +1,20 @@
-(ns funkfest.utils)
+(ns funkfest.utils
+  (:use [clojure.contrib.seq-utils :only (flatten)]))
+
+(defn str-to-bytes
+  [s]
+  (seq (. s getBytes)))
+
+(defn convert-to-byte
+  [n]
+  (cond
+    (string? n) (str-to-bytes n)
+    (number? n) (byte n)
+    :else (byte n)))
+
+(defn to-bytes
+  [& args]
+  (byte-array (flatten (map convert-to-byte args))))
 
 (defn take-min
   [n coll]

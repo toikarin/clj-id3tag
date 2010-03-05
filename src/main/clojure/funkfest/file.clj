@@ -1,7 +1,8 @@
 (ns funkfest.file
   (:use
-     [clojure.contrib.duck-streams :only (to-byte-array)]
-     [funkfest.tags :only (log-error log-debug parse-id3v2 tag-to-string)])
+    [clojure.contrib.duck-streams :only (to-byte-array)]
+    [funkfest.parser :only (log-error log-debug parse-id3v2)]
+    [funkfest.str :as str :only (tag-to-string)])
   (:import
      (java.io File)))
 
@@ -32,4 +33,8 @@
     (doseq [file filelist]
       (log-debug (. file toString))
       (log-debug (tag-to-string (parse-id3v2 (read-file file)))))))
+
+(defn foo
+  []
+  (tag-to-string (parse-id3v2 (read-file (mp3)))))
 
