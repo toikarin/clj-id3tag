@@ -49,3 +49,14 @@
           (fnext cur-data-splitted)))
       (persistent! splitted-data))))
 
+(defn update
+  [m ks f & args]
+  (if (vector? ks)
+    (loop [cur-keys ks
+           cur-m m]
+      (if (empty? cur-keys)
+        cur-m
+        (recur (rest cur-keys) (apply update cur-m (first cur-keys) f args))))
+    (assoc m ks (apply f (get m ks) args))))
+
+

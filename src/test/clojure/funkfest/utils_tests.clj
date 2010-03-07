@@ -28,3 +28,15 @@
          (testing "args after :rest"
                   (is (= [[1 2] [1 2 3] nil] (u/split-at-pos [2 :rest 1] [1 2 1 2 3])))
                   (is (= [[1 2] [1 2 3] nil nil] (u/split-at-pos [2 :rest :rest 1] [1 2 1 2 3])))))
+
+(deftest test-update
+  (is (= {:a 2 :b 3} (u/update {:a 1 :b 2} [:a :b] #(+ 1 %))))
+  (is (= {:a 2 :b 2} (u/update {:a 1 :b 2} [:a] #(+ 1 %))))
+  (is (= {:a 2 :b 2} (u/update {:a 1 :b 2} :a #(+ 1 %))))
+
+  (testing "with function params"
+    (is (= {:a 2 :b 3} (u/update {:a 1 :b 2} [:a :b] (fn [x y] (+ x y)) 1)))
+    (is (= {:a 2 :b 2} (u/update {:a 1 :b 2} [:a] (fn [x y] (+ x y)) 1)))
+    (is (= {:a 2 :b 2} (u/update {:a 1 :b 2} :a (fn [x y] (+ x y)) 1)))))
+
+
