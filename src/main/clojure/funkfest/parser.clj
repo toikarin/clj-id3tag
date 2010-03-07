@@ -320,19 +320,25 @@
 
 (defmulti parse-frame-mm (fn [frame-type header frame-data] frame-type))
 
+(defmacro defframe-data-parser
+  [frame-type fdata]
+  `(defmethod parse-frame-mm ~frame-type [frame-type# header# frame-data#]
+    (let [parsed-data# (~fdata frame-data#)]
+      (struct-map id3v2-frame
+                  :type ~frame-type
+                  :header header#
+                  :data parsed-data#))))
+
 ;
 ; Text frame
 ;
 ; <Header, ID: T[A-Z]{3}, excluding TXXX>
 ; <Text encoding>                         (1 byte)
 ; <Text information>                      (text data according the encoding)
-(defmethod parse-frame-mm :text-frame [frame-type header frame-data]
-  (let [frame-encoding (first frame-data)
-        frame-info (to-text-info (rest frame-data) frame-encoding)]
-    (struct-map id3v2-frame
-            :type frame-type
-            :header header
-            :data {:encoding frame-encoding :data frame-info})))
+(defframe-data-parser
+  :text-frame #(let [enc (first %)]
+                 {:encoding enc
+                  :data (to-text-info (rest %) enc)}))
 
 ;
 ; User defined text frame
@@ -342,15 +348,12 @@
 ; <Description>                           (text data according the encoding)
 ; <Nil byte>
 ; <Value>                                 (text data according the encoding)
-(defmethod parse-frame-mm :user-text-frame [frame-type header frame-data]
-  (let [frame-encoding (first frame-data)
-        splitted-data (split-by-nil (rest frame-data))]
-    (struct-map id3v2-frame
-                :type frame-type
-                :header header
-                :data {:encoding frame-encoding
-                       :description (to-text-info (first splitted-data))
-                       :value (to-text-info (second splitted-data))})))
+(defframe-data-parser
+  :user-text-frame #(let [enc (first %)
+                          splitted-data (split-by-nil (rest %))]
+                      {:encoding enc
+                       :description (to-text-info (first splitted-data) enc)
+                       :value (to-text-info (second splitted-data) enc)}))
 
 ;
 ; Comments frame
@@ -360,54 +363,40 @@
 ; <Language>         (text data)
 ; <Two nil bytes>
 ; <Text information> (text data according the encoding)
-(defmethod parse-frame-mm :comments-frame [frame-type header frame-data]
-  (let [[frame-encoding raw-lang raw-data] (utils/split-at-pos [1 3 :rest] frame-data)]
-    (struct-map id3v2-frame
-                :type frame-type
-                :header header
-                :data {:encoding frame-encoding
-                       :language (to-text-info raw-lang)
-                       :fixme raw-data})))
+(defframe-data-parser :comments-frame
+  #(let [splitted (utils/split-at-pos [1 3 :rest] %)]
+     (apply hash-map [:encoding :language :fixme] splitted)))
 
 ;
 ; URL link frame
 ; <Header, ID: W[A-Z]{3}, excluding WXXX>
 ; <URL> (text data)
-(defmethod parse-frame-mm :url-frame [frame-type header frame-data]
-  (struct-map id3v2-frame
-              :type frame-type
-              :header header
-              :data {:url (to-text-info (frame-data))}))
+(defframe-data-parser :url-frame #({:url (to-text-info %)}))
+
 ;
 ; User-defined URL frame
 ;
 ; <Header, ID: WXXX>
 ; <Text encoding>    (1 byte)
 ; <Description>      (text data according the encoding)
-; <Two nil bytes>
+; <Nil byte>
 ; <URL>              (text data)
-;(defmethod parse-frame-mm :user-url-frame [frame-type header frame-data]
-;  nil)
-  ;(let [frame-encoding (first frame-data)
-  ;      splitted-data (split-by-two-nils (rest frame-data))]
-  ;  (struct-map id3v2-frame
-  ;          :type frame-type
-  ;          :header header
-  ;          :data {:encoding frame-encoding :description (first splitted-data)
-  ;           :url (rest splitted-data)})))
+(defframe-data-parser :user-url-frame
+  #(let [enc (first %)
+         splitted-data (split-by-nil (rest %))]
+     {:encoding enc
+      :description (to-text-info (first splitted-data) enc)
+      :url (to-text-info (second splitted-data))}))
 
 ;
 ; Default frame parser
 ;
 ; Just add the pure data, don't parse it
 ;
-(defmethod parse-frame-mm :default [frame-type header frame-data]
-  (struct-map id3v2-frame
-              :type frame-type
-              :header header
-              :data frame-data))
+(defframe-data-parser :default identity)
 
 (defn parse-frame
+  "Parse a single frame."
   [data]
   (let [header (parse-frame-header data)
         frame-type (frame-id-to-type (:id header))
