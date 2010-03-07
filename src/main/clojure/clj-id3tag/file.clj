@@ -1,8 +1,8 @@
-(ns funkfest.file
+(ns clj-id3tag.file
   (:use
     [clojure.contrib.duck-streams :only (to-byte-array)]
-    [funkfest.parser :only (log-error log-debug parse-id3v2)]
-    [funkfest.str :as str :only (tag-to-string)])
+    [clj-id3tag.parser :only (log-error log-debug parse-id3v2)]
+    [clj-id3tag.str :as str :only (tag-to-string)])
   (:import
      (java.io File)))
 

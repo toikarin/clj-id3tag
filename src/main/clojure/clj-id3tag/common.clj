@@ -1,4 +1,4 @@
-(ns funkfest.common
+(ns clj-id3tag.common
   (:use [clojure.template :as tmpl]))
 
 ;;

@@ -1,11 +1,11 @@
-(defproject clj-id3 "0.0.1-SNAPSHOT"
+(defproject clj-id3tag "0.0.1-SNAPSHOT"
   :descpription "ID3v2 parser written in Clojure."
-  :namespaces [funkfest.common
-               funkfest.utils
-               funkfest.tags
-               funkfest.writer
-               funkfest.str
-               funkfest.helpers]
+  :namespaces [clj-id3tag.common
+               clj-id3tag.utils
+               clj-id3tag.tags
+               clj-id3tag.writer
+               clj-id3tag.str
+               clj-id3tag.helpers]
   :dependencies [[org.clojure/clojure "1.1.0"]
                  [org.clojure/clojure-contrib "1.1.0"]]
   :dev-dependencies [[org.clojars.gilbertl/vimclojure "2.1.2"]

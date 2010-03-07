@@ -1,4 +1,4 @@
-(ns funkfest.utils
+(ns clj-id3tag.utils
   (:use [clojure.contrib.seq-utils :only (flatten)]))
 
 (defn str-to-bytes

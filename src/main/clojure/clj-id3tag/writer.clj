@@ -1,6 +1,6 @@
-(ns funkfest.writer
-  (:require [[funkfest.utils :as utils]
-             [funkfest.common :as common]]))
+(ns clj-id3tag.writer
+  (:require [[clj-id3tag.utils :as utils]
+             [clj-id3tag.common :as common]]))
 
 ;;
 ;; Helpers

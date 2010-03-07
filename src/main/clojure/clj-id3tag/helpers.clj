@@ -1,5 +1,5 @@
-(ns funkfest.helpers
-  (:use [funkfest.common :as common]))
+(ns clj-id3tag.helpers
+  (:use [clj-id3tag.common :as common]))
 
 ;;
 ;; User-friendly functions

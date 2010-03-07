@@ -1,8 +1,8 @@
-(ns funkfest.parser-tests
-  (:require [funkfest.parser :as p])
+(ns clj-id3tag.parser-tests
+  (:require [clj-id3tag.parser :as p])
   (:use clojure.test
-        [funkfest.common :as common]
-        [funkfest.utils :as utils]
+        [clj-id3tag.common :as common]
+        [clj-id3tag.utils :as utils]
         [clojure.contrib.seq-utils :only (flatten)]))
 
 ;(deftest test-length-to-bytes

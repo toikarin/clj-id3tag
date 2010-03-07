@@ -1,5 +1,5 @@
-(ns funkfest.utils-tests
-  (:require [funkfest.utils :as u])
+(ns clj-id3tag.utils-tests
+  (:require [clj-id3tag.utils :as u])
   (:use clojure.test))
 
 (deftest test-take-min

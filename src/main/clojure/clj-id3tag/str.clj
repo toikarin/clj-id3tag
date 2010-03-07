@@ -1,5 +1,5 @@
-(ns funkfest.str
-  (:use [funkfest.common]))
+(ns clj-id3tag.str
+  (:use [clj-id3tag.common]))
 
 ;;
 ;; Convert to string functions

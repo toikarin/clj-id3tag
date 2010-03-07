@@ -1,7 +1,7 @@
-(ns funkfest.parser
+(ns clj-id3tag.parser
   (:use
-     [funkfest.common :as common]
-     [funkfest.utils :as utils]
+     [clj-id3tag.common :as common]
+     [clj-id3tag.utils :as utils]
      [clojure.contrib.seq-utils :only (flatten)]))
 
 (def frame-types #{:unique-file-frame
