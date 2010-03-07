@@ -83,21 +83,6 @@
 :data-length-indicator   :flags-2 0)
 
 
-;(defn add-frame
-;  [tag frame]
-;  (let [cur-frames (:frames tag)
-;        cur-header (:header tag)
-;        mod-frames (conj cur-frames frame)
-;        mod-header (massoc cur-header :tag-length #(+ (:length (:header frame)) %)
-;        mod-header (assoc cur-header :tag-length (+ (:tag-length cur-head))))
-;        ]
-;  (do
-;    (assoc tag :frames (conj cur-frames frame))
-;    )))
-    ;(assoc tag :
-    ;       (conj (:
-
-
 (defn get-frames-by-id
   "Return only those frames whose id match to wanted id."
   [tag id]

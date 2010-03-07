@@ -1,6 +1,6 @@
 (ns funkfest.parser
   (:use
-     [funkfest.common]
+     [funkfest.common :as common]
      [funkfest.utils :as utils]
      [clojure.contrib.seq-utils :only (flatten)]))
 
@@ -121,8 +121,7 @@
   (apply println "ERR: " more))
 
 ;;
-;; Helper functions
-;;
+;; Misc functions
 
 (defn starts-with-header?
   "Checks if the given data starts with a ID3v2 header."
@@ -135,20 +134,14 @@
       ; XXX: strict check for flags?
       (every? #(< % 128) length))))
 
-(defn is-user-defined-text-frame?
-  "Checks if the given id is a user defined text frame id"
-  [id]
-  (= id (:user-defined-text frame-ids))) 
-
-(defn is-unique-file-id-frame?
-  [id]
-  (= id (:uniq-file-id frame-ids)))
-
-(defn is-padded?
-  [data]
-  (every? zero? (take FRAME_HEADER_LENGTH data)))
-
 (defn calculate-padding-length
+  "Calculate padding length from given data.
+
+  Checks how many nil bytes are in the front of the given sequence.
+
+  Returns a map containing :length and :rest keys.
+  Length is the number of nil bytes and rest is the data after
+  the padding."
   [data]
   (loop [cur-data data
         len 0]
@@ -170,14 +163,8 @@
             (log-error "Invalid encoding: " text-encoding ", using default instead.")
             (get-encoding 0))))
 
-(defn to-text-info
-  ([data]
-     (to-text-info data 0))
-  ([data file-enc]
-    (String. (byte-array data) (get-encoding file-enc))))
-
 (defn calculate-length
-  "Calculates header length from given data."
+  "Calculates header length from header's length data."
   [len-data]
   {:pre [(>= (count len-data) HEADER_SIZE_LENGTH)
          (not-any? neg? (take HEADER_SIZE_LENGTH len-data))]}
@@ -188,35 +175,8 @@
                      (bit-shift-left (first raw-bytes) 21)]]
     (reduce bit-or byte-values)))
 
-(defn find-two-nil-bytes
-  [data]
-  (loop [cur-data data index 0]
-    (cond
-      (< (count cur-data) 2) -1
-      (= [0 0] (take 2 cur-data)) index
-      :else (recur (rest cur-data) (inc index)))))
-
-(defn find-nil-byte
-  [data]
-  (loop [cur-data data index 0]
-    (cond
-      (< (count cur-data) 1) -1
-      (= 0 (first cur-data)) index
-      :else (recur (rest cur-data) (inc index)))))
-
-;(defn split-by-two-nils
-;  [data]
-;  (let [split-pos (find-two-nil-bytes data)]
-;    (if (>= split-pos 0)
-;      [(take split-pos data) (drop (+ 2 split-pos) data)]
-;      [data nil])))
-;
-
-(defn split-by-nil
-  [data]
-  (split-drop-separator #(not= 0 %) data))
-
 (defn frame-id-to-type
+  "Converts the frame's id to internal type."
   [id]
   (cond
     (and
@@ -240,7 +200,21 @@
     ;(= "EQUA" id) :equalisation-frame
     ;(= "RVRB" id) :reverb-frame
     ;(= "APIC" id) :general-encapsulated-object-frame
-    :else nil))
+    :else :unknown-frame))
+
+;;
+;; Helper functions
+;;
+
+(defn to-text-info
+  ([data]
+     (to-text-info data 0))
+  ([data file-enc]
+    (String. (byte-array data) (get-encoding file-enc))))
+
+(defn split-by-nil
+  [data]
+  (common/split-drop-separator #(not= 0 %) data))
 
 ;;
 ;; Info about the ID3v2 tags...
