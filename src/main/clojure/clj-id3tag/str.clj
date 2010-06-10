@@ -2,6 +2,11 @@
   (:use [clj-id3tag.common]))
 
 ;;
+;; This file contains functions to convert parsed ID3v2 data to string.
+;;
+
+
+;;
 ;; Convert to string functions
 ;;
 
@@ -115,5 +120,5 @@
          (header-to-string (:header id3v2-tag))
          (if (:extended-header id3v2-tag) (extended-header-to-string (:extended-header id3v2-tag)))
          "Padding: " (:padding id3v2-tag) " bytes." \newline
-         (map #(frame-to-string %) (:frames id3v2-tag))))
+         (map frame-to-string (:frames id3v2-tag))))
 

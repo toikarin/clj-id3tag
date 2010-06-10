@@ -2,7 +2,7 @@
   (:use [clj-id3tag.common :as common]))
 
 ;;
-;; User-friendly functions
+;; This file contains user-friendly functions to handle parsed ID3v2 tags.
 ;;
 
 ;

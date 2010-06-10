@@ -6,6 +6,11 @@
   (:import
      (java.io File)))
 
+
+;;
+;; This file contains file reading functions.
+;;
+
 ;; Remove this
 
 (defn mp3 

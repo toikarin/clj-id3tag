@@ -1,6 +1,10 @@
 (ns clj-id3tag.utils
   (:use [clojure.contrib.seq-utils :only (flatten)]))
 
+;;
+;; This file contains utility functions not related to ID3v2 tag parsing.
+;;
+
 (defn str-to-bytes
   [s]
   (seq (. s getBytes)))

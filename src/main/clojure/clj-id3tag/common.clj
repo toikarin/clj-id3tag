@@ -2,6 +2,10 @@
   (:use [clojure.template :as tmpl]))
 
 ;;
+;; This file contains common functions related to ID3v2 tag handling
+;;
+
+;;
 ;; Types
 ;;
 
@@ -81,7 +85,6 @@
 :encryption              :flags-2 2
 :unsynchronisation       :flags-2 1
 :data-length-indicator   :flags-2 0)
-
 
 (defn get-frames-by-id
   "Return only those frames whose id match to wanted id."

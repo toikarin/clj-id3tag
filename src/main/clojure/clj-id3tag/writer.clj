@@ -3,6 +3,10 @@
              [clj-id3tag.common :as common]]))
 
 ;;
+;; This file contains functions to write ID3v2 data structures to files.
+;;
+
+;;
 ;; Helpers
 ;;
 

@@ -4,6 +4,11 @@
      [clj-id3tag.utils :as utils]
      [clojure.contrib.seq-utils :only (flatten)]))
 
+;;
+;; This file contains functions to
+;; parse ID3v2 data.
+;;
+
 (def frame-types #{:unique-file-frame
                    :text-frame
                    :user-text-frame
